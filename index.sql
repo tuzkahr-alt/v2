@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetailPro ERP/POS</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css?v=2">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="mrpos-logo-container">
+                <div class="mrpos-logo">
+                    <span class="mr-box">MR</span><span class="pos-text">POS</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item" data-target="dashboard">
+                    <button class="nav-btn" title="Dashboard">
+                        <i class="fas fa-chart-pie"></i>
+                    </button>
+                    <span class="tooltip">Dashboard</span>
+                </li>
+                <li class="nav-item active" data-target="pos">
+                    <button class="nav-btn" title="Punto de Venta">
+                        <i class="fas fa-cash-register"></i>
+                    </button>
+                    <span class="tooltip">POS / Ventas</span>
+                </li>
+                <li class="nav-item" data-target="credits">
+                    <button class="nav-btn" title="Cobranzas y Créditos">
+                        <i class="fas fa-hand-holding-dollar"></i>
+                    </button>
+                    <span class="tooltip">Cobranzas</span>
+                </li>
+                <li class="nav-item" data-target="inventory">
+                    <button class="nav-btn" title="Inventario">
+                        <i class="fas fa-box-open"></i>
+                    </button>
+                    <span class="tooltip">Inventario</span>
+                </li>
+                <li class="nav-item" data-target="people">
+                    <button class="nav-btn" title="Maestro Personas (Clientes/Prov)">
+                        <i class="fas fa-address-book"></i>
+                    </button>
+                    <span class="tooltip">Personas</span>
+                </li>
+                <li class="nav-item" data-target="reports">
+                    <button class="nav-btn" title="Informes y Reportes">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </button>
+                    <span class="tooltip">Informes</span>
+                </li>
+                <li class="nav-item" data-target="workers">
+                    <button class="nav-btn" title="Cajeros y Personal">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <span class="tooltip">Gestión Cajeros</span>
+                </li>
+            </ul>
+            <div class="nav-bottom">
+                <button class="nav-btn hidden" id="btn-pwa-install" title="Instalar en Android"
+                    style="color:#2563eb; background:rgba(37, 99, 235, 0.1); margin-bottom:10px;">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="nav-btn" id="btn-settings" title="Configuración"><i class="fas fa-cog"></i></button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="topbar">
+                <div class="page-title">
+                    <h1 id="current-page-title">Punto de Venta</h1>
+                    <p id="current-page-subtitle">Ventas y Preventas</p>
+                </div>
+                <div class="user-info">
+                    <div class="search-global">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="global-search" placeholder="Buscar folio, cliente...">
+                        <div id="global-search-results" class="autocomplete-dropdown hidden"></div>
+                    </div>
+                    <div class="time" id="clock">12:00 PM</div>
+                    <div class="avatar">
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff" alt="User">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Views -->
+            <div class="view-container">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="dashboard" class="view">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon bg-blue-light"><i class="fas fa-dollar-sign text-blue"></i></div>
+                            <div class="kpi-data">
+                                <h3>Ventas del Día</h3>
+                                <p class="value" id="kpi-sales">$0</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon bg-orange-light"><i class="fas fa-file-invoice-dollar text-orange"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Total por Cobrar (Cuotas)</h3>
+                                <p class="value" id="kpi-credits">$0</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon bg-red-light"><i class="fas fa-exclamation-triangle text-red"></i>
+                            </div>
+                            <div class="kpi-data">
+                                <h3>Alertas de Stock</h3>
+                                <p class="value" id="kpi-stock">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-widgets"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%;">
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h2>Top 5 Productos Más Vendidos</h2>
+                            </div>
+                            <div style="height: 250px;">
+                                <canvas id="chartSales"></canvas>
+                            </div>
+                        </div>
+                        <div class="widget" style="display: flex; flex-direction: column;">
+                            <div class="widget-header">
+                                <h2>Cuotas Vencidas / Alertas de Mora</h2>
+                            </div>
+                            <div class="table-responsive" style="flex: 1;">
+                                <table class="datagrid" id="table-alerts">
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>RUT</th>
+                                            <th>Cuota / Venc.</th>
+                                            <th>Días Retraso</th>
+                                            <th>Monto</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="alerts-body">
+                                        <!-- Generado dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. POS VIEW (VENTAS / PREVENTAS) -->
+                <section id="pos" class="view active">
+                    <div class="pos-layout">
+                        <!-- Left Panel: Products -->
+                        <div class="pos-products">
+                            <div class="search-bar-modern">
+                                <i class="fas fa-barcode"></i>
+                                <input type="text" id="pos-search" placeholder="Escanear código o buscar producto..."
+                                    autocomplete="off">
+                                <div id="pos-search-results" class="autocomplete-dropdown hidden"></div>
+                            </div>
+                            <div class="product-grid" id="pos-product-grid">
+                                <!-- Products rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Cart & Payment -->
+                        <div class="pos-cart">
+                            <div class="cart-header">
+                                <h2>Orden Actual</h2>
+                                <button class="btn-text" id="btn-clear-cart"><i class="fas fa-trash"></i>
+                                    Limpiar</button>
+                            </div>
+
+                            <!-- Cliente Section -->
+                            <div class="client-selector">
+                                <div class="client-info" id="selected-client">
+                                    <i class="fas fa-user-circle"></i> Mostrar Cliente General
+                                </div>
+                                <button class="btn-icon" id="btn-search-client" title="Buscar Cliente"><i
+                                        class="fas fa-search"></i></button>
+                                <button class="btn-icon" id="btn-add-client" title="Nuevo Cliente"><i
+                                        class="fas fa-user-plus"></i></button>
+                            </div>
+
+                            <div class="cart-items" id="cart-items">
+                                <!-- Cart items -->
+                                <div class="empty-cart-msg">No hay productos en la orden.</div>
+                            </div>
+
+                            <div class="cart-totals">
+                                <div class="tot-row"><span>Subtotal:</span> <span id="cart-subtotal">$0</span></div>
+                                <div class="tot-row"><span>Descuento:</span> <span>$0</span></div>
+                                <div class="tot-row total"><span>Total:</span> <span id="cart-total">$0</span></div>
+                            </div>
+
+                            <div class="cart-actions">
+                                <button class="btn-action bg-orange" id="btn-presale">
+                                    <i class="fas fa-pause-circle"></i> Preventa
+                                </button>
+                                <button class="btn-action bg-blue" id="btn-pay">
+                                    <i class="fas fa-credit-card"></i> Pagar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CREDITOS VIEW -->
+                <section id="credits" class="view">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2>Estado de Cuenta y Cuotas (Letras)</h2>
+                            <div class="search-bar-modern">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="credit-search" placeholder="Buscar por cliente o RUT...">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="datagrid" id="table-credits">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Venta Folio</th>
+                                        <th>Cuota</th>
+                                        <th>Vencimiento</th>
+                                        <th>Monto</th>
+                                        <th>Interés</th>
+                                        <th>Estado</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="credits-body">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. INVENTORY VIEW -->
+                <section id="inventory" class="view">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2>Gestión de Inventario (Maestro de Productos)</h2>
+                            <button class="btn-primary" id="btn-open-new-product"><i class="fas fa-plus"></i> Nuevo
+                                Producto</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="datagrid" id="table-inventory">
+                                <thead>
+                                    <tr>
+                                        <th>Cód/SKU</th>
+                                        <th>Descripción</th>
+                                        <th>Categoría/Flia</th>
+                                        <th>Precio Vta</th>
+                                        <th>Stock Act.</th>
+                                        <th>Estado</th>
+                                        <th>Opciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4.5 PEOPLE VIEW (MAESTRO PERSONAS) -->
+                <section id="people" class="view">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2>Maestro de Personas (Clientes, Proveedores, Empleados)</h2>
+                            <button class="btn-primary" id="btn-open-new-person"><i class="fas fa-user-plus"></i> Nueva
+                                Persona</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="datagrid" id="table-people">
+                                <thead>
+                                    <tr>
+                                        <th>RUT</th>
+                                        <th>Nombre / Razón Social</th>
+                                        <th>Giro / Actividad</th>
+                                        <th>Teléfono / Email</th>
+                                        <th>Roles</th>
+                                        <th>Estado</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="people-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. WORKERS VIEW -->
+                <section id="workers" class="view">
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2>Gestión de Cajeros (Inventarios Aislados)</h2>
+                            <button class="btn-primary" id="btn-new-worker"><i class="fas fa-user-plus"></i> Agregar
+                                Cajero</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="datagrid" id="table-workers">
+                                <thead>
+                                    <tr>
+                                        <th>ID Cajero</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Instancia DB Activa</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="workers-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. REPORTS VIEW -->
+                <section id="reports" class="view">
+                    <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+                        <div class="kpi-card" style="flex:1;">
+                            <div class="kpi-data">
+                                <h3>Seleccionar Tipo de Informe</h3>
+                                <select id="report-type" class="form-control" style="margin-top:0.5rem;">
+                                    <option value="sales_product">Ventas por Producto</option>
+                                    <option value="sales_category">Ventas por Categoría / Marca</option>
+                                    <option value="sales_cashier">Rendimiento por Cajero</option>
+                                    <option value="sales_general">Historial General de Ventas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="kpi-card"
+                            style="flex:1; display:flex; gap:1rem; align-items:center; justify-content:center;">
+                            <button class="btn-primary" id="btn-export-pdf" style="background:#e3342f;"><i
+                                    class="fas fa-file-pdf"></i> PDF</button>
+                            <button class="btn-primary" id="btn-export-excel" style="background:#38c172;"><i
+                                    class="fas fa-file-excel"></i> Excel (CSV)</button>
+                            <button class="btn-action bg-blue" id="btn-generate-report"><i class="fas fa-sync-alt"></i>
+                                Generar</button>
+                        </div>
+                    </div>
+
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h2 id="report-title">Vista Previa del Informe</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="datagrid" id="table-reports">
+                                <thead id="report-head">
+                                    <!-- Dynamic -->
+                                </thead>
+                                <tbody id="report-body">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-widgets mt-4"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h2>Resumen de Caja Diario (Ventas)</h2>
+                            </div>
+                            <div style="height: 300px;">
+                                <canvas id="chartDaily"></canvas>
+                            </div>
+                        </div>
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h2>Resumen de Venta Semanal</h2>
+                            </div>
+                            <div style="height: 300px;">
+                                <canvas id="chartWeekly"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="modal-payment">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Procesar Pago</h2>
+                <button class="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-methods">
+                    <div class="method-card active" data-method="cash">
+                        <i class="fas fa-money-bill-wave"></i> Efectivo
+                    </div>
+                    <div class="method-card" data-method="card">
+                        <i class="fas fa-credit-card"></i> Tarjeta
+                    </div>
+                    <div class="method-card" data-method="transfer">
+                        <i class="fas fa-exchange-alt"></i> Transf.
+                    </div>
+                    <div class="method-card" data-method="credit">
+                        <i class="fas fa-file-signature"></i> Crédito / Letras
+                    </div>
+                </div>
+
+                <div id="credit-options" class="hidden">
+                    <h3 class="mt-4">Opciones de Crédito</h3>
+                    <div class="form-group">
+                        <label>Número de Cuotas:</label>
+                        <select id="credit-installments" class="form-control">
+                            <option value="1">1 Cuota (30 días)</option>
+                            <option value="3">3 Cuotas (30/60/90 días)</option>
+                            <option value="6">6 Cuotas</option>
+                        </select>
+                    </div>
+                    <div class="credit-warning hidden" id="credit-warning">
+                        <i class="fas fa-exclamation-circle"></i> Cliente superará su límite de crédito o tiene 3+
+                        cuotas vencidas.
+                    </div>
+                </div>
+
+                <div id="cash-options" class="mt-4">
+                    <div class="form-group">
+                        <label>Efectivo Recibido (Presiona ENTER para vender):</label>
+                        <input type="number" class="form-control" id="cash-received"
+                            placeholder="Monto entregado por cliente" autocomplete="off">
+                    </div>
+                    <div class="mt-2 text-green fw-bold">
+                        Vuelto Estimado a Entregar: <span id="cash-change" style="font-size: 1.2rem;">$0</span>
+                    </div>
+                </div>
+
+                <div class="payment-summary mt-4">
+                    <h3>Total a Pagar: <span id="payment-total-display">$0</span></h3>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary btn-close-modal">Cancelar</button>
+                <button class="btn-primary" id="btn-confirm-payment">Confirmar Pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Client/Search Client Modal -->
+    <div class="modal-overlay" id="modal-client">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Seleccionar / Nuevo Cliente</h2>
+                <button class="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <div class="tab active" data-tab="search">Buscar</div>
+                    <div class="tab" data-tab="new">Nuevo</div>
+                </div>
+
+                <div id="tab-search" class="tab-content active mt-2">
+                    <input type="text" id="search-client-input" class="form-control" placeholder="RUT o Nombre...">
+                    <ul class="client-list mt-2" id="client-search-results">
+                        <!-- list items -->
+                    </ul>
+                </div>
+
+                <div id="tab-new" class="tab-content mt-2 hidden">
+                    <div class="form-group">
+                        <label>RUT:</label>
+                        <input type="text" class="form-control" id="new-client-rut" placeholder="Ej: 11.111.111-1">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre / Razón Social:</label>
+                        <input type="text" class="form-control" id="new-client-name">
+                    </div>
+                    <div class="form-group">
+                        <label>Giro comercial:</label>
+                        <input type="text" class="form-control" id="new-client-giro">
+                    </div>
+                    <div class="form-group">
+                        <label>Límite de Crédito Autorizado:</label>
+                        <input type="number" class="form-control" id="new-client-limit" value="100000">
+                    </div>
+                    <button class="btn-primary w-100 mt-2" id="btn-save-client">Guardar Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maestro de Productos Rediseñado (Premium) -->
+    <div class="modal-overlay" id="modal-product">
+        <div class="modal" style="width: 900px; max-width: 95%;">
+            <div class="modal-header" style="background:#f0f0f0; border-bottom:1px solid #ccc;">
+                <h2 style="font-size:1rem; color:#333;"><i class="fas fa-cube"></i> Maestro Productos</h2>
+                <button class="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:1.5rem; background:#fdfdfd; font-size:0.85rem;">
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+                    <div class="maestro-left">
+                        <div style="display:flex; align-items:center; margin-bottom:8px;">
+                            <label style="width:120px;">Codigo</label>
+                            <input type="text" id="m-codigo" class="form-control" style="width:200px;">
+                        </div>
+                        <div style="display:flex; align-items:center; margin-bottom:8px;">
+                            <label style="width:120px;">Descripcion</label>
+                            <input type="text" id="m-desc" class="form-control" style="flex:1;">
+                        </div>
+                        <div style="display:flex; align-items:center; margin-bottom:8px;">
+                            <label style="width:120px;">Depto/Categoría</label>
+                            <select id="m-cat" class="form-control" style="flex:1;">
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; margin-bottom:8px;">
+                            <label style="width:120px;">Familia</label>
+                            <select id="m-fam" class="form-control" style="flex:1;">
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; flex-direction:column; margin-top:10px;">
+                            <label>Observaciones</label>
+                            <textarea id="m-obs" class="form-control" style="height:60px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="maestro-right">
+                        <fieldset style="border:1px solid #ddd; padding:10px; border-radius:4px; margin-bottom:10px;">
+                            <legend style="padding:0 5px; font-weight:bold; color:var(--primary);">Precios</legend>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                                <label>Venta $</label><input type="number" id="m-pventa" class="form-control">
+                                <label>Margen %</label><input type="number" id="m-margen" class="form-control">
+                                <label>U.x Oferta</label><input type="number" id="m-uoferta" class="form-control">
+                                <label>P. Oferta $</label><input type="number" id="m-poferta" class="form-control">
+                            </div>
+                        </fieldset>
+                        <div
+                            style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:10px; background:#f0f0f0; border-radius:4px;">
+                            <div><label>Stock Crit.</label><input type="number" id="m-scrit" class="form-control"
+                                    value="5"></div>
+                            <div><label>Stock Act.</label><input type="number" id="m-sact" class="form-control"
+                                    value="0"></div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px;"><label><input type="checkbox"
+                                    id="m-activo" checked> Activo</label><label><input type="checkbox" id="m-iva"
+                                    checked> IVA</label></div>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-top:20px; border-top:1px solid #ddd; padding-top:15px;">
+                    <button id="btn-save-product" class="btn-primary" style="width:120px;">Grabar</button>
+                    <button class="btn-secondary btn-close-modal">Salir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maestro Personas Modal -->
+    <div class="modal-overlay" id="modal-person">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Gestión de Maestro: Personas</h2>
+                <button class="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>RUT / ID:</label>
+                        <input type="text" class="form-control" id="p-rut" placeholder="11.111.111-1">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre / Razón Social:</label>
+                        <input type="text" class="form-control" id="p-name">
+                    </div>
+                </div>
+                <!-- ... resto de campos personas ... -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary btn-close-modal">Cancelar</button>
+                <button class="btn-primary" id="btn-save-person">Grabar Persona</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings & Business Config Modal -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+            <div class="modal-header">
+                <h2>Configuración del Sistema</h2>
+                <button class="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <div class="tab active" data-tab="set-inventory">Inventario / Stock</div>
+                    <div class="tab" data-tab="set-company">Proveedores</div>
+                </div>
+                <div id="tab-set-inventory" class="tab-content active mt-2">
+                    <div class="form-group">
+                        <label>Ajustar Stock Gral:</label>
+                        <select class="form-control" id="set-adj-prod"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad Nueva:</label>
+                        <input type="number" class="form-control" id="set-adj-qty">
+                    </div>
+                    <button class="btn-primary" id="btn-save-stock-adj">Aplicar Ajuste</button>
+                </div>
+                <div id="tab-set-company" class="tab-content mt-2 hidden">
+                    <div class="form-group"><label>Nombre Proveedor:</label><input type="text" id="new-prov-name"
+                            class="form-control"></div>
+                    <button class="btn-primary" id="btn-save-provider">Agregar Proveedor</button>
+                    <ul id="providers-list" class="mt-2"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
